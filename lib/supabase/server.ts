@@ -16,7 +16,12 @@ export async function createClient() {
         setAll(cookiesToSet: { name: string; value: string; options: any }[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, {
+                ...options,
+                maxAge: options?.maxAge ?? 60 * 60 * 24 * 365,
+                path: '/',
+                sameSite: 'lax',
+              })
             )
           } catch {
             // Server component — mutations happen in middleware

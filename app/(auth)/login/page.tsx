@@ -25,13 +25,46 @@ function LoginForm() {
     setError('')
 
     const supabase = createClient()
+
+    let email = form.email.trim()
+
+    // If no '@' it's a username — look up the email
+    if (!email.includes('@')) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', email.toLowerCase())
+        .single()
+
+      if (!profile) {
+        setError('Пользователь с таким никнеймом не найден')
+        setLoading(false)
+        return
+      }
+
+      // Get email via RPC or from auth — fall back to <id>@junto.local convention
+      // We store a predictable placeholder email for username-only users
+      // For regular users, we use the lookup API
+      const { data: emailData } = await supabase
+        .rpc('get_user_email_by_id', { user_id: profile.id })
+        .single()
+
+      if (!emailData) {
+        setError('Не удалось найти аккаунт. Попробуйте войти через email.')
+        setLoading(false)
+        return
+      }
+
+      email = emailData as string
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
-      email: form.email,
+      email,
       password: form.password,
     })
 
     if (error) {
-      setError('Неверный email или пароль')
+      setError('Неверный email/никнейм или пароль')
       setLoading(false)
       return
     }
@@ -142,10 +175,10 @@ function LoginForm() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">Email</label>
+              <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">Email или никнейм</label>
               <Input
-                type="email"
-                placeholder="you@example.com"
+                type="text"
+                placeholder="you@example.com или @nickname"
                 icon={<Mail className="h-4 w-4" />}
                 value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}

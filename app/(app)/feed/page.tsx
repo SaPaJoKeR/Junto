@@ -154,19 +154,24 @@ export default async function FeedPage({ searchParams }: PageProps) {
             { value: 'newest', label: 'Новые' },
             { value: 'popular', label: 'Популярные' },
             { value: 'upcoming', label: 'Скоро' },
-          ].map(opt => (
-            <Link
-              key={opt.value}
-              href={`/feed?${new URLSearchParams({ ...params, sort: opt.value }).toString()}`}
-              className={`px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                (params.sort ?? 'newest') === opt.value
-                  ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
-                  : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-              }`}
-            >
-              {opt.label}
-            </Link>
-          ))}
+          ].map(opt => {
+            const cleanParams = Object.fromEntries(
+              Object.entries({ ...params, sort: opt.value }).filter(([, v]) => v !== undefined && v !== '')
+            )
+            return (
+              <Link
+                key={opt.value}
+                href={`/feed?${new URLSearchParams(cleanParams as Record<string, string>).toString()}`}
+                className={`px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                  (params.sort ?? 'newest') === opt.value
+                    ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
+                    : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                }`}
+              >
+                {opt.label}
+              </Link>
+            )
+          })}
         </div>
       </div>
 

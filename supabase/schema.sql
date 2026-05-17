@@ -269,6 +269,17 @@ create policy "notifications_own"
   on public.notifications for all
   using (auth.uid() = user_id);
 
+-- ─── EMAIL LOOKUP BY USER ID (for username login) ─────────
+-- Returns the email for a given user_id — safe because only authenticated users can call it
+create or replace function public.get_user_email_by_id(user_id uuid)
+returns text
+language sql
+security definer
+set search_path = public
+as $$
+  select email from auth.users where id = user_id;
+$$;
+
 -- ─── MESSAGES (chat) ───────────────────────────────────────
 create table if not exists public.messages (
   id           uuid primary key default gen_random_uuid(),

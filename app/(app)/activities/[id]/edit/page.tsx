@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, MapPin } from 'lucide-react'
+import { ArrowLeft, Save, MapPin, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,8 @@ interface PageProps {
 export default function EditActivityPage({ params }: PageProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const [isDeleting, startDelete] = useTransition()
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [activityId, setActivityId] = useState('')
   const [isOnline, setIsOnline] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -64,6 +66,16 @@ export default function EditActivityPage({ params }: PageProps) {
 
   function update(key: string, value: string | number) {
     setForm(f => ({ ...f, [key]: value }))
+  }
+
+  async function handleDelete() {
+    if (!confirmDelete) { setConfirmDelete(true); return }
+    startDelete(async () => {
+      const supabase = createClient()
+      await supabase.from('activities').delete().eq('id', activityId)
+      router.push('/feed')
+      router.refresh()
+    })
   }
 
   async function handleSave() {
@@ -218,6 +230,45 @@ export default function EditActivityPage({ params }: PageProps) {
           <Save className="h-4 w-4" />
           Сохранить изменения
         </Button>
+
+        <div className="border-t border-zinc-200 dark:border-zinc-700 pt-5">
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">Опасная зона</p>
+          {confirmDelete ? (
+            <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 space-y-3">
+              <p className="text-sm font-semibold text-red-700 dark:text-red-300">
+                Удалить активность безвозвратно? Все голоса и бронирования будут удалены.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setConfirmDelete(false)}
+                >
+                  Отмена
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white border-red-600"
+                  loading={isDeleting}
+                  onClick={handleDelete}
+                >
+                  Да, удалить
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/30"
+              onClick={handleDelete}
+            >
+              <Trash2 className="h-4 w-4" />
+              Удалить активность
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   )

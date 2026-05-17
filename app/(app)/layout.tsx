@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { Navbar } from '@/components/Navbar'
+import { NotificationListener } from '@/components/NotificationListener'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -20,6 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {children}
       </main>
+      <NotificationListener userId={user.id} />
     </div>
   )
 }
