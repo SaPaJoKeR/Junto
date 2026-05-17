@@ -269,6 +269,64 @@ create policy "notifications_own"
   on public.notifications for all
   using (auth.uid() = user_id);
 
+-- ─── FRIENDSHIPS ───────────────────────────────────────────
+create table if not exists public.friendships (
+  id           uuid primary key default gen_random_uuid(),
+  requester_id uuid not null references public.profiles(id) on delete cascade,
+  addressee_id uuid not null references public.profiles(id) on delete cascade,
+  status       text not null default 'pending' check (status in ('pending', 'accepted', 'declined')),
+  created_at   timestamptz not null default now(),
+  unique (requester_id, addressee_id)
+);
+
+create index if not exists friendships_requester_idx on public.friendships(requester_id);
+create index if not exists friendships_addressee_idx on public.friendships(addressee_id);
+
+alter table public.friendships enable row level security;
+
+drop policy if exists "friendships_select" on public.friendships;
+create policy "friendships_select" on public.friendships for select
+  using (auth.uid() = requester_id or auth.uid() = addressee_id);
+
+drop policy if exists "friendships_insert" on public.friendships;
+create policy "friendships_insert" on public.friendships for insert
+  with check (auth.uid() = requester_id);
+
+drop policy if exists "friendships_update" on public.friendships;
+create policy "friendships_update" on public.friendships for update
+  using (auth.uid() = addressee_id or auth.uid() = requester_id);
+
+drop policy if exists "friendships_delete" on public.friendships;
+create policy "friendships_delete" on public.friendships for delete
+  using (auth.uid() = requester_id or auth.uid() = addressee_id);
+
+-- ─── DIRECT MESSAGES ───────────────────────────────────────
+create table if not exists public.direct_messages (
+  id          uuid primary key default gen_random_uuid(),
+  sender_id   uuid not null references public.profiles(id) on delete cascade,
+  receiver_id uuid not null references public.profiles(id) on delete cascade,
+  content     text not null check (char_length(content) between 1 and 2000),
+  read        boolean not null default false,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists dm_sender_receiver_idx on public.direct_messages(sender_id, receiver_id, created_at);
+create index if not exists dm_receiver_idx         on public.direct_messages(receiver_id, created_at);
+
+alter table public.direct_messages enable row level security;
+
+drop policy if exists "dm_select" on public.direct_messages;
+create policy "dm_select" on public.direct_messages for select
+  using (auth.uid() = sender_id or auth.uid() = receiver_id);
+
+drop policy if exists "dm_insert" on public.direct_messages;
+create policy "dm_insert" on public.direct_messages for insert
+  with check (auth.uid() = sender_id);
+
+drop policy if exists "dm_update" on public.direct_messages;
+create policy "dm_update" on public.direct_messages for update
+  using (auth.uid() = receiver_id);
+
 -- ─── EMAIL LOOKUP BY USER ID (for username login) ─────────
 -- Returns the email for a given user_id — safe because only authenticated users can call it
 create or replace function public.get_user_email_by_id(user_id uuid)
