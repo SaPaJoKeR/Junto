@@ -38,17 +38,19 @@ export function ActivityChat({ activityId, userId, initialMessages }: ActivityCh
   }, [messages])
 
   useEffect(() => {
-    const channel = supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const channel = (supabase as any)
       .channel(`chat:${activityId}`)
       .on(
-        'postgres_changes' as Parameters<typeof channel.on>[0],
+        'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'messages',
           filter: `activity_id=eq.${activityId}`,
         },
-        async (payload: { new: { id: string } }) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (payload: any) => {
           const { data } = await supabase
             .from('messages')
             .select('*, profiles(username, full_name, avatar_url)')
