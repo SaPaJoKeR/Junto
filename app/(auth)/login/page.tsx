@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get('next') ?? '/feed'
@@ -75,8 +75,6 @@ export default function LoginPage() {
             <p className="text-violet-200 text-lg leading-relaxed max-w-sm">
               Сотни активностей ждут тебя каждый день. Один клик — и ты в компании.
             </p>
-
-            {/* Testimonial */}
             <div className="p-5 rounded-2xl bg-white/10 backdrop-blur border border-white/20">
               <p className="text-white text-sm italic mb-3">
                 "Нашёл команду для воскресного футбола за 10 минут. Теперь играем каждую неделю!"
@@ -98,7 +96,6 @@ export default function LoginPage() {
       {/* Right panel — form */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-white dark:bg-zinc-950">
         <div className="w-full max-w-md">
-          {/* Mobile logo */}
           <Link href="/" className="flex items-center gap-2 mb-8 lg:hidden">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center">
               <span className="text-white font-black text-sm">J</span>
@@ -118,7 +115,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Google OAuth */}
           <Button
             variant="outline"
             size="lg"
@@ -146,9 +142,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
-                Email
-              </label>
+              <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">Email</label>
               <Input
                 type="email"
                 placeholder="you@example.com"
@@ -162,9 +156,7 @@ export default function LoginPage() {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                  Пароль
-                </label>
+                <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Пароль</label>
                 <Link href="/forgot-password" className="text-xs text-violet-600 dark:text-violet-400 hover:underline">
                   Забыл пароль?
                 </Link>
@@ -190,12 +182,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full mt-2"
-              loading={loading}
-            >
+            <Button type="submit" size="lg" className="w-full mt-2" loading={loading}>
               Войти
               <ArrowRight className="h-4 w-4" />
             </Button>
@@ -203,5 +190,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white dark:bg-zinc-950" />}>
+      <LoginForm />
+    </Suspense>
   )
 }
