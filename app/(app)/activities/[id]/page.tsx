@@ -250,7 +250,8 @@ export default async function ActivityPage({ params }: PageProps) {
               </h2>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {votes.map((vote, i) => {
-                  const p = vote.profiles as { username: string; full_name: string; avatar_url: string } | null
+                  const raw = Array.isArray(vote.profiles) ? vote.profiles[0] : vote.profiles
+                  const p = raw as { username: string; full_name: string; avatar_url: string } | null
                   const initials = p?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) ?? '?'
                   return (
                     <div key={i} className="flex items-center gap-2">
