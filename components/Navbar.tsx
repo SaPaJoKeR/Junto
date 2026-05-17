@@ -80,8 +80,7 @@ export function Navbar({ profile, userId }: NavbarProps) {
 
             {/* User menu */}
             <div className="relative">
-              <button
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
+              <Link href="/profile"
                 className="flex items-center gap-2 p-1 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors"
               >
                 <Avatar className="h-8 w-8">
@@ -91,33 +90,11 @@ export function Navbar({ profile, userId }: NavbarProps) {
                 <span className="hidden sm:block text-sm font-semibold text-zinc-700 dark:text-zinc-300 max-w-[100px] truncate">
                   {profile?.full_name ?? profile?.username ?? 'Профиль'}
                 </span>
+              </Link>
+              <button onClick={handleSignOut} title="Выйти"
+                className="hidden sm:flex ml-1 p-2 rounded-xl text-zinc-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 transition-colors">
+                <LogOut className="h-4 w-4" />
               </button>
-
-              {userMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-2 w-52 z-20 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-xl overflow-hidden animate-scale-in">
-                    <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800">
-                      <p className="text-sm font-semibold">{profile?.full_name}</p>
-                      <p className="text-xs text-muted-foreground">@{profile?.username}</p>
-                    </div>
-                    <div className="p-2">
-                      <Link href="/profile" onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
-                        <User className="h-4 w-4 text-zinc-500" /> Мой профиль
-                      </Link>
-                      <Link href="/friends" onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
-                        <Users className="h-4 w-4 text-zinc-500" /> Друзья
-                      </Link>
-                      <button onClick={handleSignOut}
-                        className="flex w-full items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 transition-colors">
-                        <LogOut className="h-4 w-4" /> Выйти
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
             </div>
 
             {/* Mobile menu button */}
