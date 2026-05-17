@@ -269,9 +269,40 @@ create policy "notifications_own"
   on public.notifications for all
   using (auth.uid() = user_id);
 
+-- ─── MESSAGES (chat) ───────────────────────────────────────
+create table if not exists public.messages (
+  id           uuid primary key default gen_random_uuid(),
+  activity_id  uuid not null references public.activities(id) on delete cascade,
+  user_id      uuid not null references public.profiles(id) on delete cascade,
+  content      text not null check (char_length(content) between 1 and 1000),
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists messages_activity_id_idx on public.messages(activity_id, created_at);
+
+alter table public.messages enable row level security;
+
+drop policy if exists "messages_select_all" on public.messages;
+create policy "messages_select_all"
+  on public.messages for select using (true);
+
+drop policy if exists "messages_insert_auth" on public.messages;
+create policy "messages_insert_auth"
+  on public.messages for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "messages_delete_own" on public.messages;
+create policy "messages_delete_own"
+  on public.messages for delete
+  using (auth.uid() = user_id);
+
+-- ─── TIMEZONE (добавляем к activities) ─────────────────────
+alter table public.activities
+  add column if not exists creator_timezone text;
+
 -- ─── ПРОВЕРКА ──────────────────────────────────────────────
--- После выполнения эта команда должна вернуть 5 таблиц:
--- profiles, activities, votes, bookings, notifications
+-- После выполнения эта команда должна вернуть 6 таблиц:
+-- activities, bookings, messages, notifications, profiles, votes
 select tablename
   from pg_tables
   where schemaname = 'public'

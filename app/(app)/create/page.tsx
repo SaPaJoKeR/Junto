@@ -140,6 +140,7 @@ export default function CreatePage() {
           min_votes_to_confirm: form.min_votes_to_confirm,
           tags: form.tags,
           status: 'proposal',
+          creator_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         })
         .select()
         .single()

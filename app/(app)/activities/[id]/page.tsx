@@ -3,15 +3,19 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft, MapPin, Globe, Calendar, Users, DollarSign,
-  Share2, BookmarkPlus, User, Clock,
+  Clock, Pencil,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { VotingPanel } from '@/components/VotingPanel'
+import { ShareButton } from '@/components/ShareButton'
+import { AddToCalendarButton } from '@/components/AddToCalendarButton'
+import { ActivityChat } from '@/components/ActivityChat'
+import { LocalTime } from '@/components/LocalTime'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { CATEGORY_META, formatDate, timeAgo } from '@/lib/utils'
-import type { Activity } from '@/types'
+import type { Activity, ChatMessage } from '@/types'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -74,16 +78,26 @@ export default async function ActivityPage({ params }: PageProps) {
 
   if (error || !raw) notFound()
 
-  // Get vote aggregates
+  // Vote aggregates
   const { data: votes } = await supabase
     .from('votes')
     .select('vote, user_id, profiles(username, full_name, avatar_url)')
     .eq('activity_id', id)
 
-  const yes = votes?.filter(v => v.vote === 'yes').length ?? 0
-  const no = votes?.filter(v => v.vote === 'no').length ?? 0
+  const yes   = votes?.filter(v => v.vote === 'yes').length   ?? 0
+  const no    = votes?.filter(v => v.vote === 'no').length    ?? 0
   const maybe = votes?.filter(v => v.vote === 'maybe').length ?? 0
   const userVote = votes?.find(v => v.user_id === user?.id)?.vote ?? null
+
+  // Initial chat messages
+  const { data: rawMessages } = await supabase
+    .from('messages')
+    .select('*, profiles(username, full_name, avatar_url)')
+    .eq('activity_id', id)
+    .order('created_at', { ascending: true })
+    .limit(100)
+
+  const initialMessages = (rawMessages ?? []) as ChatMessage[]
 
   const activity: Activity = {
     ...raw,
@@ -95,18 +109,20 @@ export default async function ActivityPage({ params }: PageProps) {
   const creatorInitials = activity.creator?.full_name
     ?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) ?? '?'
 
+  const isCreator = user?.id === activity.creator_id
+
   const STATUS_LABELS = {
-    proposal: { text: 'Идёт голосование', variant: 'proposal' as const },
-    confirmed: { text: 'Подтверждено ✓', variant: 'confirmed' as const },
-    cancelled: { text: 'Отменено', variant: 'destructive' as const },
-    completed: { text: 'Завершено', variant: 'secondary' as const },
+    proposal:  { text: 'Идёт голосование',  variant: 'proposal'     as const },
+    confirmed: { text: 'Подтверждено ✓',    variant: 'confirmed'    as const },
+    cancelled: { text: 'Отменено',           variant: 'destructive'  as const },
+    completed: { text: 'Завершено',          variant: 'secondary'    as const },
   }
   const statusInfo = STATUS_LABELS[activity.status]
 
   return (
     <div className="max-w-4xl mx-auto">
       {/* Back */}
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <Link
           href="/feed"
           className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors group"
@@ -114,6 +130,14 @@ export default async function ActivityPage({ params }: PageProps) {
           <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
           Назад к ленте
         </Link>
+        {isCreator && (
+          <Link href={`/activities/${id}/edit`}>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Pencil className="h-3.5 w-3.5" />
+              Редактировать
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="grid lg:grid-cols-5 gap-8">
@@ -121,7 +145,6 @@ export default async function ActivityPage({ params }: PageProps) {
         <div className="lg:col-span-3 space-y-6">
           {/* Hero card */}
           <div className="rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 overflow-hidden">
-            {/* Category gradient strip */}
             <div className={`h-3 bg-gradient-to-r ${meta.gradient}`} />
 
             <div className="p-6 sm:p-8">
@@ -154,8 +177,13 @@ export default async function ActivityPage({ params }: PageProps) {
                         {activity.date_options.length > 1 ? `Вариант ${i + 1}` : 'Дата и время'}
                       </p>
                       <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                        {formatDate(opt.date)} • {opt.time_start}
-                        {opt.time_end && `–${opt.time_end}`}
+                        {formatDate(opt.date)} •{' '}
+                        <LocalTime
+                          date={opt.date}
+                          timeStart={opt.time_start}
+                          timeEnd={opt.time_end}
+                          sourceTimezone={activity.creator_timezone}
+                        />
                       </p>
                     </div>
                   </div>
@@ -251,8 +279,7 @@ export default async function ActivityPage({ params }: PageProps) {
               </h2>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {votes.map((vote, i) => {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const p = (Array.isArray(vote.profiles) ? vote.profiles[0] : vote.profiles) as any as { username: string; full_name: string; avatar_url: string } | null
+                  const p = (Array.isArray(vote.profiles) ? vote.profiles[0] : vote.profiles) as { username: string; full_name: string; avatar_url: string } | null
                   const initials = p?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) ?? '?'
                   return (
                     <div key={i} className="flex items-center gap-2">
@@ -272,12 +299,19 @@ export default async function ActivityPage({ params }: PageProps) {
               </div>
             </div>
           )}
+
+          {/* Chat */}
+          <ActivityChat
+            activityId={id}
+            userId={user?.id ?? null}
+            initialMessages={initialMessages}
+          />
         </div>
 
         {/* Sidebar — 2 cols */}
         <div className="lg:col-span-2 space-y-5">
-          {/* Voting panel */}
           <div className="sticky top-24 space-y-5">
+            {/* Voting panel */}
             <div className="p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900">
               <VotingPanel activity={activity} userId={user?.id ?? null} />
             </div>
@@ -285,16 +319,18 @@ export default async function ActivityPage({ params }: PageProps) {
             {/* Booking panel */}
             <BookingSection activity={activity} userId={user?.id ?? ''} />
 
-            {/* Share */}
+            {/* Action buttons */}
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1 gap-2">
-                <Share2 className="h-4 w-4" />
-                Поделиться
-              </Button>
-              <Button variant="outline" size="sm" className="flex-1 gap-2">
-                <BookmarkPlus className="h-4 w-4" />
-                Сохранить
-              </Button>
+              <ShareButton title={activity.title} text={activity.description ?? undefined} />
+              {activity.date_options?.[0] && (
+                <AddToCalendarButton
+                  title={activity.title}
+                  description={activity.description}
+                  location={activity.is_online ? null : activity.location}
+                  dateOption={activity.date_options[0]}
+                  timezone={activity.creator_timezone}
+                />
+              )}
             </div>
 
             {/* Similar activities nudge */}

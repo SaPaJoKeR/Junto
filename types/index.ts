@@ -47,12 +47,26 @@ export interface Activity {
   tags: string[]
   created_at: string
   confirmed_at: string | null
+  creator_timezone: string | null
   // joined from relations
   creator?: Profile
   vote_counts?: VoteCounts
   user_vote?: VoteType | null
   participant_count?: number
   is_participant?: boolean
+}
+
+export interface ChatMessage {
+  id: string
+  activity_id: string
+  user_id: string
+  content: string
+  created_at: string
+  profiles?: {
+    username: string
+    full_name: string | null
+    avatar_url: string | null
+  } | null
 }
 
 export interface VoteCounts {
