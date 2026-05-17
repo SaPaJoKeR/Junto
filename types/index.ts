@@ -108,3 +108,13 @@ export interface CreateActivityInput {
 }
 
 export type SortOption = 'newest' | 'popular' | 'upcoming' | 'ending_soon'
+
+export interface WorkSchedule {
+  id: string
+  user_id: string
+  pattern_work: number
+  pattern_off: number
+  start_date: string // YYYY-MM-DD
+  is_public: boolean
+  created_at: string
+}

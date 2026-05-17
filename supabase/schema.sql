@@ -369,9 +369,38 @@ create policy "messages_delete_own"
 alter table public.activities
   add column if not exists creator_timezone text;
 
+-- ─── WORK SCHEDULES ────────────────────────────────────────
+create table if not exists public.work_schedules (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null unique references public.profiles(id) on delete cascade,
+  pattern_work integer not null default 2 check (pattern_work >= 1 and pattern_work <= 30),
+  pattern_off  integer not null default 2 check (pattern_off >= 1 and pattern_off <= 30),
+  start_date   date not null,
+  is_public    boolean not null default false,
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists work_schedules_user_id_idx on public.work_schedules(user_id);
+
+alter table public.work_schedules enable row level security;
+
+drop policy if exists "work_schedules_select_public" on public.work_schedules;
+create policy "work_schedules_select_public" on public.work_schedules for select
+  using (is_public = true or auth.uid() = user_id);
+
+drop policy if exists "work_schedules_insert_own" on public.work_schedules;
+create policy "work_schedules_insert_own" on public.work_schedules for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "work_schedules_update_own" on public.work_schedules;
+create policy "work_schedules_update_own" on public.work_schedules for update
+  using (auth.uid() = user_id);
+
+drop policy if exists "work_schedules_delete_own" on public.work_schedules;
+create policy "work_schedules_delete_own" on public.work_schedules for delete
+  using (auth.uid() = user_id);
+
 -- ─── ПРОВЕРКА ──────────────────────────────────────────────
--- После выполнения эта команда должна вернуть 6 таблиц:
--- activities, bookings, messages, notifications, profiles, votes
 select tablename
   from pg_tables
   where schemaname = 'public'

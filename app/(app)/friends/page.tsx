@@ -47,6 +47,7 @@ export default function FriendsPage() {
   const [friends, setFriends] = useState<Friendship[]>([])
   const [incoming, setIncoming] = useState<Friendship[]>([])
   const [loading, setLoading] = useState(true)
+  const [actionLoading, setActionLoading] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   const supabase = createClient()
@@ -101,40 +102,52 @@ export default function FriendsPage() {
     setSearchResults(results)
   }
 
-  function sendRequest(addresseeId: string) {
-    startTransition(async () => {
-      await supabase.from('friendships').insert({ requester_id: userId, addressee_id: addresseeId, status: 'pending' })
-      doSearch(query)
-    })
+  async function sendRequest(addresseeId: string) {
+    if (actionLoading || !userId) return
+    setActionLoading(true)
+    const { error } = await supabase
+      .from('friendships')
+      .insert({ requester_id: userId, addressee_id: addresseeId, status: 'pending' })
+    if (error) console.error('sendRequest error:', error)
+    await doSearch(query)
+    setActionLoading(false)
   }
 
-  function cancelRequest(friendshipId: string) {
-    startTransition(async () => {
-      await supabase.from('friendships').delete().eq('id', friendshipId)
-      doSearch(query)
-      loadData(userId)
-    })
+  async function cancelRequest(friendshipId: string) {
+    if (actionLoading) return
+    setActionLoading(true)
+    const { error } = await supabase.from('friendships').delete().eq('id', friendshipId)
+    if (error) console.error('cancelRequest error:', error)
+    await doSearch(query)
+    await loadData(userId)
+    setActionLoading(false)
   }
 
-  function acceptRequest(friendshipId: string) {
-    startTransition(async () => {
-      await supabase.from('friendships').update({ status: 'accepted' }).eq('id', friendshipId)
-      loadData(userId)
-    })
+  async function acceptRequest(friendshipId: string) {
+    if (actionLoading) return
+    setActionLoading(true)
+    const { error } = await supabase.from('friendships').update({ status: 'accepted' }).eq('id', friendshipId)
+    if (error) console.error('acceptRequest error:', error)
+    await loadData(userId)
+    setActionLoading(false)
   }
 
-  function declineRequest(friendshipId: string) {
-    startTransition(async () => {
-      await supabase.from('friendships').delete().eq('id', friendshipId)
-      loadData(userId)
-    })
+  async function declineRequest(friendshipId: string) {
+    if (actionLoading) return
+    setActionLoading(true)
+    const { error } = await supabase.from('friendships').delete().eq('id', friendshipId)
+    if (error) console.error('declineRequest error:', error)
+    await loadData(userId)
+    setActionLoading(false)
   }
 
-  function unfriend(friendshipId: string) {
-    startTransition(async () => {
-      await supabase.from('friendships').delete().eq('id', friendshipId)
-      loadData(userId)
-    })
+  async function unfriend(friendshipId: string) {
+    if (actionLoading) return
+    setActionLoading(true)
+    const { error } = await supabase.from('friendships').delete().eq('id', friendshipId)
+    if (error) console.error('unfriend error:', error)
+    await loadData(userId)
+    setActionLoading(false)
   }
 
   function getFriendProfile(f: Friendship) {
@@ -204,7 +217,7 @@ export default function FriendsPage() {
                     </Button>
                   </Link>
                   <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-950/30"
-                    onClick={() => unfriend(f.id)} loading={isPending}>
+                    onClick={() => unfriend(f.id)} disabled={actionLoading}>
                     <UserX className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -238,10 +251,10 @@ export default function FriendsPage() {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" className="gap-1.5" onClick={() => acceptRequest(f.id)} loading={isPending}>
+                  <Button size="sm" className="gap-1.5" onClick={() => acceptRequest(f.id)} disabled={actionLoading}>
                     <UserCheck className="h-3.5 w-3.5" /> Принять
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => declineRequest(f.id)} loading={isPending}>
+                  <Button variant="outline" size="sm" onClick={() => declineRequest(f.id)} disabled={actionLoading}>
                     <UserX className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -279,17 +292,17 @@ export default function FriendsPage() {
                   </div>
                   <div>
                     {p.status === 'none' && (
-                      <Button size="sm" className="gap-1.5" onClick={() => sendRequest(p.id)} loading={isPending}>
+                      <Button size="sm" className="gap-1.5" onClick={() => sendRequest(p.id)} disabled={actionLoading}>
                         <UserPlus className="h-3.5 w-3.5" /> Добавить
                       </Button>
                     )}
                     {p.status === 'pending_sent' && (
-                      <Button size="sm" variant="outline" className="gap-1.5 text-zinc-400" onClick={() => cancelRequest(p.friendship_id!)} loading={isPending}>
+                      <Button size="sm" variant="outline" className="gap-1.5 text-zinc-400" onClick={() => cancelRequest(p.friendship_id!)} disabled={actionLoading}>
                         <Clock className="h-3.5 w-3.5" /> Отмена
                       </Button>
                     )}
                     {p.status === 'pending_received' && (
-                      <Button size="sm" className="gap-1.5" onClick={() => acceptRequest(p.friendship_id!)} loading={isPending}>
+                      <Button size="sm" className="gap-1.5" onClick={() => acceptRequest(p.friendship_id!)} disabled={actionLoading}>
                         <UserCheck className="h-3.5 w-3.5" /> Принять
                       </Button>
                     )}
