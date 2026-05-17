@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Compass, PlusCircle, Users, User, LogOut, Menu, X } from 'lucide-react'
+import { Compass, PlusCircle, Users, User, LogOut, Menu, X, MessageCircle } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { NotificationBell } from '@/components/NotificationBell'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -18,9 +18,10 @@ interface NavbarProps {
 }
 
 const NAV_LINKS = [
-  { href: '/feed',    label: 'Лента',   icon: Compass   },
-  { href: '/friends', label: 'Друзья',  icon: Users     },
-  { href: '/create',  label: 'Создать', icon: PlusCircle },
+  { href: '/feed',     label: 'Лента',     icon: Compass       },
+  { href: '/friends',  label: 'Друзья',    icon: Users         },
+  { href: '/messages', label: 'Сообщения', icon: MessageCircle },
+  { href: '/create',   label: 'Создать',   icon: PlusCircle    },
 ]
 
 export function Navbar({ profile, userId }: NavbarProps) {

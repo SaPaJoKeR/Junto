@@ -134,8 +134,8 @@ export default async function FeedPage({ searchParams }: PageProps) {
       </div>
 
       {/* Search + sort bar */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <form className="flex-1 relative" action="/feed" method="get">
+      <div className="flex flex-col gap-3">
+        <form className="relative" action="/feed" method="get">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
           <input
             name="q"
@@ -148,8 +148,8 @@ export default async function FeedPage({ searchParams }: PageProps) {
           )}
         </form>
 
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal className="h-4 w-4 text-zinc-400" />
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-0.5">
+          <SlidersHorizontal className="h-4 w-4 text-zinc-400 shrink-0" />
           {[
             { value: 'newest', label: 'Новые' },
             { value: 'popular', label: 'Популярные' },
@@ -162,7 +162,7 @@ export default async function FeedPage({ searchParams }: PageProps) {
               <Link
                 key={opt.value}
                 href={`/feed?${new URLSearchParams(cleanParams as Record<string, string>).toString()}`}
-                className={`px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                className={`shrink-0 px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
                   (params.sort ?? 'newest') === opt.value
                     ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
                     : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
