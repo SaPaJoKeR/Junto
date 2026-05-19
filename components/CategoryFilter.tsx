@@ -1,5 +1,6 @@
 'use client'
 
+import { useRef } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { CATEGORY_META } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -19,6 +20,7 @@ export function CategoryFilter() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const active = (searchParams.get('category') as Category | null) ?? 'all'
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   function setCategory(cat: string) {
     const params = new URLSearchParams(searchParams.toString())
@@ -31,8 +33,14 @@ export function CategoryFilter() {
     router.push(`${pathname}?${params.toString()}`)
   }
 
+  function handleWheel(e: React.WheelEvent) {
+    if (!scrollRef.current) return
+    e.preventDefault()
+    scrollRef.current.scrollLeft += e.deltaY + e.deltaX
+  }
+
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none -mx-1 px-1">
+    <div ref={scrollRef} onWheel={handleWheel} className="flex gap-2 overflow-x-auto pb-2 scrollbar-none -mx-1 px-1">
       {ALL_CATEGORIES.map(cat => {
         const isActive = cat.value === active
         return (
